@@ -1,14 +1,8 @@
-# MazyOS Scraper
+# Prospectar
 
-Toda prospecção começa com uma lista. E montar essa lista na mão, copiando clínica por clínica do Google Maps pra uma planilha, come uma tarde inteira.
+Ferramenta local para montar listas de prospecção a partir do Google Maps. Você digita o nicho e o bairro, ela busca as empresas, mostra num mapa e num painel, dá uma **nota de prioridade** para cada uma, deixa a **mensagem de abordagem** pronta e exporta tudo para planilha ou para o seu CRM.
 
-O MazyOS Scraper faz isso em segundos. Você digita o nicho e o bairro, ele busca no Google Maps e devolve as empresas num mapa e numa planilha, já separando quem tem WhatsApp, quem não tem site e quem só tem Instagram.
-
-No meu primeiro teste, "dentista" no Batel, em Curitiba, voltaram 31 clínicas em uns 20 segundos. Oito delas sem site.
-
-![Mapa com as empresas encontradas](docs/mazyos/mapa.jpg)
-
-![Painel com os números da busca](docs/mazyos/painel.png)
+Roda no seu computador, não precisa de chave de API e não envia nada sozinha.
 
 ---
 
@@ -16,85 +10,71 @@ No meu primeiro teste, "dentista" no Batel, em Curitiba, voltaram 31 clínicas e
 
 ### Pelo Claude Code (o jeito mais fácil)
 
-Abra o Claude Code numa pasta qualquer e cole isto:
+Abra o Claude Code numa pasta qualquer e cole:
 
 ```
-Clona o repositório https://github.com/mazzeoia/mazyos-scraper, entra na pasta e segue o CLAUDE.md pra instalar e abrir o MazyOS Scraper.
+Clona o repositório https://github.com/jonathanalvesdesign/prospectar, entra na pasta e segue o CLAUDE.md pra instalar e abrir o Prospectar.
 ```
 
-Ele baixa o código, instala o que faltar e abre a ferramenta no navegador. Funciona no Windows, no Mac e no Linux. Quando ele pedir permissão pra rodar o script de instalação, pode aprovar.
+### Na mão
 
-### Na mão (Windows)
+- **Windows:** rode `instalar.ps1` e, depois, dê dois cliques em **`Abrir Prospectar.cmd`**.
+- **Mac e Linux:** `bash instalar.sh` e depois `bash abrir.sh`.
 
-1. Na lateral desta página, clique em **Releases** e baixe o arquivo `mazyos-scraper-windows.zip`.
-2. Extraia o zip numa pasta qualquer (Documentos, por exemplo).
-3. Dê dois cliques em **`Abrir MazyOS Scraper.cmd`**. O navegador abre sozinho em `http://localhost:8080`.
+O navegador abre em `http://localhost:8080`. A primeira busca baixa um navegador próprio (uns 150 MB), então demora mais.
 
-Na primeira vez ele baixa um navegador próprio (uns 150 MB), então a primeira busca demora um pouco mais.
-
-O Windows pode mostrar o aviso "O Windows protegeu o computador". Isso acontece porque o programa não tem assinatura digital paga, não porque tem algo errado. Clique em **Mais informações** e depois em **Executar assim mesmo**.
-
-Pra desligar, feche a janela "MazyOS Scraper" que fica minimizada na barra de tarefas.
-
-Mac e Linux: use o caminho do Claude Code, ou rode `bash instalar.sh` e depois `bash abrir.sh` na pasta do projeto.
+O programa escuta **só no seu computador** (`127.0.0.1`). Ninguém na mesma rede consegue abrir o painel.
 
 ---
 
 ## Como usar
 
-1. **O que você procura?** O nicho: "dentista", "pet shop", "escritório de advocacia". Pra buscar vários de uma vez, separe por vírgula.
-2. **Onde?** Bairro e cidade. O mapa vai até o local e desenha o raio da busca.
-3. **Quantidade:** 20, 60, 120 ou 200+. Quanto mais, mais demora (de 1 a 15 minutos).
-4. **Buscar e-mails:** entra no site de cada empresa atrás de um e-mail. Deixa a busca bem mais lenta, então só ligue quando precisar.
-5. Clique em **Buscar empresas**. Os pontos vão aparecendo no mapa enquanto ele trabalha.
+1. **O que você procura?** O nicho: "dentista", "pet shop". Para vários, separe por vírgula.
+2. **Onde?** Bairro e cidade. O mapa desenha o raio da busca.
+3. **Quantidade:** 20, 60, 120 ou 200+. Quanto mais, mais demora.
+4. **Buscar e-mails:** entra no site de cada empresa. Deixa tudo mais lento.
+5. Clique em **Buscar empresas** e acompanhe os pontos no mapa.
 
-Clicando num ponto, aparece a ficha da empresa: nota, número de avaliações, telefone (com link direto pro WhatsApp quando é celular), site e link pro Google Maps.
+### Prioridade (0 a 100)
 
-Na aba **Painel** ficam os números da busca, os filtros (Sem site, Só rede social, WhatsApp, Com e-mail) e dois botões. **Baixar planilha** gera um arquivo que abre direto no Excel, em português, só com o que estiver filtrado. **Copiar telefones** joga a lista de telefones na área de transferência.
+Cada empresa recebe uma nota. A tabela já vem ordenada da mais promissora para a menos.
 
-O filtro mais útil pra quem vende site, tráfego ou automação? **Sem site.** É a empresa com avaliação boa no Google e nenhum lugar pra mandar o cliente.
+| O que | Pontos |
+|---|---|
+| Sem site | 40 |
+| Só rede social (Instagram, Facebook…) | 25 |
+| Celular, ou seja, tem WhatsApp | 25 |
+| Telefone fixo | 8 |
+| Nota no Google 4,5+ / 4,0+ / 3,5+ | 20 / 14 / 7 |
+| 30+ avaliações / 10+ avaliações | 15 / 8 |
 
----
+Passe o mouse sobre a nota para ver o motivo. O filtro **Quentes** mostra só quem tem 70 ou mais. Ajuste os pesos em `score()`, no arquivo `web/static/js/prospectar.js`.
 
-## Como funciona por dentro
+### Mensagem de abordagem
 
-Ele não usa a API oficial do Google Maps. Por isso não precisa de chave, de cartão de crédito nem paga por consulta.
+Abra **Mensagem de abordagem** no painel para escrever o seu modelo. Variáveis: `{nome}`, `{bairro}`, `{cidade}`, `{nicho}`, `{problema}` e `{meu_nome}`. O `{problema}` muda sozinho conforme a empresa (sem site, só rede social, ou com site).
 
-Funciona como um estagiário muito rápido. O programa abre o Google Maps num navegador invisível, pesquisa "dentista em Batel, Curitiba", rola a lista de resultados até o fim, entra na ficha de cada empresa e anota o que está na tela: nome, telefone, site, nota, endereço, horário. Depois junta tudo numa planilha.
+- **Abordar** abre o WhatsApp com o texto pronto. **Você confere e aperta enviar.** O Prospectar não envia mensagens sozinho, de propósito: envio automático é o caminho mais rápido para banir o seu número.
+- **Copiar msg** serve para quem só tem telefone fixo.
 
-A analogia quebra num ponto: o estagiário entende o que lê, o programa não. Ele depende da página do Google estar organizada do jeito que ele conhece. Quando o Google muda o layout do Maps, o programa pode parar de achar as informações até alguém atualizar o código.
+O modelo padrão já inclui uma frase para a pessoa pedir para sair da lista.
+
+### Exportar
+
+- **Baixar planilha:** CSV que abre direto no Excel em português, com Prioridade e Mensagem.
+- **Exportar pro CRM:** arquivo JSON com todos os campos, a prioridade, o motivo e a mensagem de cada lead. Quando o seu CRM tiver API, troque o corpo de `crm.send()` no mesmo arquivo JS.
 
 ---
 
 ## Limites e cuidados
 
-- **Termos do Google.** Coletar dados do Maps de forma automática vai contra os termos de uso do Google. Na prática, o risco é o Google desconfiar do volume e mostrar captcha ou bloquear por um tempo. Use com moderação: algumas buscas por dia, não centenas.
-- **A quantidade é aproximada.** Quem decide quantos resultados aparecem é o Google. Às vezes você pede 60 e vêm 45.
-- **Pontos cinza no mapa** são empresas que o Google devolveu um pouco fora do raio escolhido.
-- **LGPD.** Telefone de empresa listado no Google é dado público, mas a abordagem continua sujeita à LGPD. Se apresente, diga onde achou o contato e tire da lista na hora quem pedir pra não receber mais mensagem.
+- **Termos do Google.** Coletar dados do Maps de forma automática vai contra os termos de uso do Google. O risco prático é captcha ou bloqueio temporário. Use com moderação.
+- **A quantidade é aproximada.** Quem decide quantos resultados vêm é o Google.
+- **Quando o Google muda o layout** do Maps, a coleta pode parar até o código ser atualizado.
+- **LGPD.** O telefone de empresa no Google é público, mas a abordagem continua sujeita à LGPD: se identifique, diga onde achou o contato e tire da lista quem pedir.
 
 ---
 
-## Créditos
+## Créditos e licença
 
-O motor é o [google-maps-scraper](https://github.com/gosom/google-maps-scraper), do Georgios Komninos (gosom), projeto de código aberto com licença MIT. O README original dele está em [README-original.md](README-original.md).
-
-O que eu mudei nesta versão:
-
-- **Interface nova**, em português, com mapa ao vivo, painel de leads, filtros e planilha no padrão do Excel brasileiro.
-- **Correção pro Windows.** A versão oficial para de funcionar no Windows (as buscas voltam vazias, [issue #322](https://github.com/gosom/google-maps-scraper/issues/322)). O ajuste está em `third_party/scrapemate`.
-- **Rota nova na API**, `GET /api/v1/jobs/{id}/places`, que devolve as empresas de uma busca em JSON.
-- **Estatística de uso desligada.** O projeto original manda estatísticas anônimas de uso pro autor. O atalho `Abrir MazyOS Scraper.cmd` desliga isso (`DISABLE_TELEMETRY=1`).
-
----
-
-## Pra quem programa
-
-Precisa do [Go 1.27](https://go.dev/dl/). Na pasta do projeto:
-
-```bash
-go build -o mazyos-scraper .
-./mazyos-scraper -web -addr :8080 -data-folder webdata
-```
-
-No Windows, gere `mazyos-scraper.exe` e use o `Abrir MazyOS Scraper.cmd`. Os arquivos da interface ficam em `web/static/` (`templates/index.html`, `css/mazyos.css`, `js/mazyos.js`). Todas as opções de linha de comando estão no [README original](README-original.md).
+O motor de coleta é o [google-maps-scraper](https://github.com/gosom/google-maps-scraper), de Georgios Komninos (gosom), licença MIT. O aviso de copyright dele está em [LICENSE](LICENSE) e o README original em [README-original.md](README-original.md). A base da interface em português vem do MazyOS Scraper, de Vagner Mazzeo.

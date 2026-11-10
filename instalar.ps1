@@ -1,4 +1,4 @@
-﻿# Instala o MazyOS Scraper no Windows e abre no navegador.
+﻿# Instala o Prospectar no Windows e abre no navegador.
 # Uso: powershell -ExecutionPolicy Bypass -File instalar.ps1 [-NaoAbrir]
 param([switch]$NaoAbrir)
 
@@ -6,11 +6,11 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 Set-Location $PSScriptRoot
 
-$exe = Join-Path $PSScriptRoot 'mazyos-scraper.exe'
+$exe = Join-Path $PSScriptRoot 'prospectar.exe'
 
 function Baixar-Release {
     try {
-        $rel = Invoke-RestMethod 'https://api.github.com/repos/mazzeoia/mazyos-scraper/releases/latest'
+        $rel = Invoke-RestMethod 'https://api.github.com/repos/jonathanalvesdesign/prospectar/releases/latest'
     } catch {
         return $false
     }
@@ -18,12 +18,12 @@ function Baixar-Release {
     if (-not $asset) { return $false }
 
     Write-Host "Baixando $($asset.name) ($($rel.tag_name))..."
-    $tmp = Join-Path $env:TEMP ('mazyos-scraper-' + [guid]::NewGuid())
+    $tmp = Join-Path $env:TEMP ('prospectar-' + [guid]::NewGuid())
     New-Item -ItemType Directory -Force $tmp | Out-Null
     $zip = Join-Path $tmp 'release.zip'
     Invoke-WebRequest $asset.browser_download_url -OutFile $zip
     Expand-Archive $zip -DestinationPath $tmp -Force
-    $novo = Get-ChildItem $tmp -Recurse -Filter 'mazyos-scraper.exe' | Select-Object -First 1
+    $novo = Get-ChildItem $tmp -Recurse -Filter 'prospectar.exe' | Select-Object -First 1
     if (-not $novo) { return $false }
     Copy-Item $novo.FullName $exe -Force
     Remove-Item $tmp -Recurse -Force
@@ -50,7 +50,7 @@ function Achar-Go {
 }
 
 if (Test-Path $exe) {
-    Write-Host 'mazyos-scraper.exe já existe, pulando a instalação.'
+    Write-Host 'prospectar.exe já existe, pulando a instalação.'
 } elseif (-not (Baixar-Release)) {
     Write-Host 'Sem executável pronto no Release. Compilando a partir do código...'
     $go = Achar-Go
@@ -59,10 +59,10 @@ if (Test-Path $exe) {
 }
 
 Write-Host ''
-Write-Host 'MazyOS Scraper instalado.'
-Write-Host 'Pra abrir depois: dois cliques em "Abrir MazyOS Scraper.cmd".'
+Write-Host 'Prospectar instalado.'
+Write-Host 'Pra abrir depois: dois cliques em "Abrir Prospectar.cmd".'
 
 if (-not $NaoAbrir) {
-    Start-Process -FilePath (Join-Path $PSScriptRoot 'Abrir MazyOS Scraper.cmd') -WorkingDirectory $PSScriptRoot
+    Start-Process -FilePath (Join-Path $PSScriptRoot 'Abrir Prospectar.cmd') -WorkingDirectory $PSScriptRoot
     Write-Host 'Abrindo em http://localhost:8080 (a primeira busca baixa um navegador, uns 150 MB).'
 }

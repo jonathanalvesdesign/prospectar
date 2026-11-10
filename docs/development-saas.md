@@ -47,6 +47,6 @@ Get the ip
 3. SSH:
 
 ```
-ssh -i local/test_ssh_key ubuntu@<vm-ip>
+ssh -i <sua-chave-privada> ubuntu@<vm-ip>
 ```
 

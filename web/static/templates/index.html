@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MazyOS Scraper</title>
-    <link rel="icon" type="image/png" href="/static/img/mazyos-simbolo.png">
+    <title>Prospectar</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/prospectar-logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-    <link rel="stylesheet" href="/static/css/mazyos.css">
+    <link rel="stylesheet" href="/static/css/prospectar.css">
 </head>
 <body>
     <div id="map"></div>
@@ -17,9 +17,9 @@
     <aside class="panel">
         <header class="panel-head">
             <div class="brand">
-                <img class="logo" src="/static/img/mazyos-simbolo.png" alt="">
+                <img class="logo" src="/static/img/prospectar-logo.svg" alt="">
                 <div>
-                    <div class="brand-name">MazyOS Scraper</div>
+                    <div class="brand-name">Prospectar</div>
                     <div class="brand-sub">Empresas do Google Maps</div>
                 </div>
             </div>
@@ -112,7 +112,7 @@
             </section>
         </div>
 
-        <footer class="panel-foot">mazyos.com.br</footer>
+        <footer class="panel-foot">Prospectar</footer>
     </aside>
 
     <div class="livebar" id="livebar" hidden>
@@ -123,7 +123,7 @@
 
     <main class="board" id="board" hidden>
         <div class="board-empty" id="boardEmpty">
-            <img class="logo big" src="/static/img/mazyos-simbolo.png" alt="">
+            <img class="logo big" src="/static/img/prospectar-logo.svg" alt="">
             <p>Escolha uma busca em <b>Suas buscas</b> pra ver as empresas aqui.</p>
         </div>
         <div class="board-main" id="boardMain" hidden>
@@ -134,6 +134,7 @@
                 </div>
                 <div class="board-actions">
                     <button type="button" class="ghost" id="copyPhones">Copiar telefones</button>
+                    <button type="button" class="ghost" id="crmExport">Exportar pro CRM</button>
                     <button type="button" class="primary small" id="download">Baixar planilha</button>
                 </div>
             </div>
@@ -144,6 +145,7 @@
                     <button type="button" data-f="nosite">Sem site</button>
                     <button type="button" data-f="social">Só rede social</button>
                     <button type="button" data-f="whats">WhatsApp</button>
+                    <button type="button" data-f="hot">Quentes</button>
                     <button type="button" data-f="email">Com e-mail</button>
                 </div>
                 <label class="field slim">
@@ -151,6 +153,18 @@
                     <input id="filterText" type="text" placeholder="Filtrar por nome ou bairro">
                 </label>
             </div>
+            <details class="msgbox" id="msgBox">
+                <summary>Mensagem de abordagem</summary>
+                <div class="msg-body">
+                    <label class="msg-name">Seu nome
+                        <input id="myName" type="text" placeholder="Como você se apresenta">
+                    </label>
+                    <textarea id="msgTpl" rows="5" spellcheck="false"></textarea>
+                    <div class="msg-hint">Variáveis: {nome} {bairro} {cidade} {nicho} {problema} {meu_nome}. O botão "Abordar" abre o WhatsApp com o texto pronto; você confere e envia.</div>
+                    <div class="msg-preview" id="msgPreview"></div>
+                    <button type="button" class="ghost" id="msgReset">Restaurar modelo</button>
+                </div>
+            </details>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -158,8 +172,10 @@
                             <th>Empresa</th>
                             <th>Bairro</th>
                             <th class="num">Nota</th>
+                            <th class="num" title="0 a 100: quanto mais alta, mais promissora a empresa">Prioridade</th>
                             <th>Telefone</th>
                             <th>Site</th>
+                            <th></th>
                             <th></th>
                         </tr>
                     </thead>
@@ -172,6 +188,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script src="/static/js/mazyos.js"></script>
+    <script src="/static/js/prospectar.js"></script>
 </body>
 </html>
