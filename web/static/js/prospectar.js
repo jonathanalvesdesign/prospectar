@@ -104,6 +104,8 @@
     function siteKind(url) {
         if (!url) return 'none';
         if (/instagram\.com|facebook\.com|linktr\.ee|wa\.me|whatsapp\.com|tiktok\.com/i.test(url)) return 'social';
+        // Site gratuito ou de construtor (Wix, Google "negocio.site"...): existe, mas passa pouca confiança.
+        if (/wixsite\.com|negocio\.site|business\.site|site\.google|blogspot\.com|wordpress\.com|weebly\.com|webnode\.|godaddysites\.com|mystrikingly\.com|carrd\.co|yolasite\.com/i.test(url)) return 'weak';
         return 'site';
     }
 
@@ -113,7 +115,7 @@
 
     // ---------- Prioridade do lead ----------
     // Nota de 0 a 100. Quanto mais a empresa precisa do que você vende e mais fácil é falar com ela, maior a nota.
-    //   site: sem site 40 · só rede social 25 · site próprio 0
+    //   site: sem site 40 · só rede social 25 · site gratuito/fraco 25 · site próprio 0
     //   telefone: celular (WhatsApp) 25 · fixo 8 · sem telefone 0
     //   avaliação: >=4,5 20 · >=4,0 14 · >=3,5 7  (negócio bom que merece aparecer melhor)
     //   volume de avaliações: >=30 15 · >=10 8     (negócio ativo, com cliente de verdade)
@@ -125,6 +127,7 @@
         var why = [];
         if (k === 'none') { total += 40; why.push('sem site'); }
         else if (k === 'social') { total += 25; why.push('só rede social'); }
+        else if (k === 'weak') { total += 25; why.push('site gratuito'); }
         if (whatsapp(p.phone)) { total += 25; why.push('WhatsApp'); }
         else if (p.phone) { total += 8; }
         var r = Number(p.review_rating || 0);
@@ -154,6 +157,7 @@
         var k = siteKind(p.website);
         if (k === 'none') return 'percebi que ainda não tem site, e muita gente pesquisa antes de ligar';
         if (k === 'social') return 'percebi que hoje o contato é só pelas redes sociais, sem um site próprio';
+        if (k === 'weak') return 'reparei que o site de vocês é de um construtor gratuito, e isso passa menos confiança pra quem pesquisa';
         return 'tenho uma ideia pra trazer mais clientes pra vocês';
     }
 
@@ -548,6 +552,7 @@
             var k = siteKind(p.website);
             if (state.filter === 'nosite' && k !== 'none') return false;
             if (state.filter === 'social' && k !== 'social') return false;
+            if (state.filter === 'weak' && k !== 'weak') return false;
             if (state.filter === 'whats' && !whatsapp(p.phone)) return false;
             if (state.filter === 'email' && !p.emails) return false;
             if (state.filter === 'hot' && score(p).total < HOT) return false;
@@ -601,7 +606,7 @@
             var k = siteKind(p.website);
             var site = k === 'none' ? '<span class="tag dark">Sem site</span>'
                 : '<a class="t-site" href="' + esc(p.website) + '" target="_blank" rel="noopener">' + esc(domain(p.website)) + '</a>' +
-                  (k === 'social' ? '<span class="tag">Rede social</span>' : '');
+                  (k === 'social' ? '<span class="tag">Rede social</span>' : k === 'weak' ? '<span class="tag">Site gratuito</span>' : '');
             var wa = whatsapp(p.phone);
             var sc = score(p);
             var phone = !p.phone ? '<span class="t-cat">sem telefone</span>'

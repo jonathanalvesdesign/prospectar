@@ -43,6 +43,7 @@ Cada empresa recebe uma nota. A tabela já vem ordenada da mais promissora para 
 |---|---|
 | Sem site | 40 |
 | Só rede social (Instagram, Facebook…) | 25 |
+| Site gratuito ou de construtor (Wix, negocio.site, Blogspot…) | 25 |
 | Celular, ou seja, tem WhatsApp | 25 |
 | Telefone fixo | 8 |
 | Nota no Google 4,5+ / 4,0+ / 3,5+ | 20 / 14 / 7 |
