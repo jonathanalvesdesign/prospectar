@@ -1,6 +1,6 @@
 # Prospectar
 
-Ferramenta local para montar listas de prospecção a partir do Google Maps. Você digita o nicho e o bairro, ela busca as empresas, mostra num mapa e num painel, dá uma **nota de prioridade** para cada uma, deixa a **mensagem de abordagem** pronta e exporta tudo para planilha ou para o seu CRM.
+Ferramenta local para montar listas de prospecção a partir do Google Maps. Você digita o nicho e o bairro, ela busca as empresas, mostra num mapa e num painel, dá uma **nota de prioridade** para cada uma, deixa a **mensagem de abordagem** pronta e exporta tudo para planilha.
 
 Roda no seu computador, não precisa de chave de API e não envia nada sozinha.
 
@@ -62,7 +62,6 @@ O modelo padrão já inclui uma frase para a pessoa pedir para sair da lista.
 ### Exportar
 
 - **Baixar planilha:** CSV que abre direto no Excel em português, com Prioridade e Mensagem.
-- **Exportar pro CRM:** arquivo JSON com todos os campos, a prioridade, o motivo e a mensagem de cada lead. Quando o seu CRM tiver API, troque o corpo de `crm.send()` no mesmo arquivo JS.
 
 ---
 

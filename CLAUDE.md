@@ -1,6 +1,6 @@
 # Prospectar
 
-Ferramenta local que busca empresas no Google Maps por nicho e bairro, dá nota de prioridade a cada lead, gera a mensagem de abordagem e exporta para planilha ou CRM. É um fork do [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper) (Go, licença MIT), com interface em português derivada do MazyOS Scraper. Mantenha o `LICENSE` do gosom.
+Ferramenta local que busca empresas no Google Maps por nicho e bairro, dá nota de prioridade a cada lead, gera a mensagem de abordagem e exporta para planilha. É um fork do [gosom/google-maps-scraper](https://github.com/gosom/google-maps-scraper) (Go, licença MIT), com interface em português derivada do MazyOS Scraper. Mantenha o `LICENSE` do gosom.
 
 Quem usa este repositório normalmente não é programador. Fale em português, explique o que está fazendo em linguagem simples e não peça pra pessoa rodar comando que você mesmo pode rodar.
 
@@ -46,7 +46,6 @@ prospectar -input buscas.txt -results leads.csv -lang pt -depth 5 -exit-on-inact
 
 - Nota de prioridade: `score()` em `web/static/js/prospectar.js` (pesos documentados no README).
 - Mensagem de abordagem: `TPL_DEFAULT`, `messageFor()` e `waLink()` no mesmo arquivo. O envio é sempre manual: nunca automatize o envio de WhatsApp.
-- Saída pro CRM: `crm.send()` (hoje baixa JSON). Para ligar uma API, troque o corpo dessa função e libere o domínio em `connect-src` na CSP de `web/web.go`.
 - O servidor escuta em `127.0.0.1:8080` por padrão. Só use `:8080` se a pessoa pedir acesso pela rede e avise que o painel não tem senha.
 - Telemetria vem desligada; só liga com `ENABLE_TELEMETRY=1`.
 

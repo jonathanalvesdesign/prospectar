@@ -175,32 +175,6 @@
         return wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(messageFor(p)) : '';
     }
 
-    // ---------- Saída pro CRM ----------
-    // Hoje gera um arquivo JSON. Quando o CRM tiver API, troque só o corpo desta função
-    // (e libere o endereço dele em connect-src, em web/web.go).
-    var crm = {
-        send: function (leads, filename) {
-            var blob = new Blob([JSON.stringify(leads, null, 2)], { type: 'application/json' });
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            a.click();
-            setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-        }
-    };
-
-    function leadFor(p, busca) {
-        var s = score(p);
-        return {
-            nome: p.title, categoria: p.category, telefone: p.phone,
-            whatsapp: waLink(p) ? 'https://wa.me/' + whatsapp(p.phone) : '',
-            site: p.website, email: p.emails, nota: p.review_rating || null, avaliacoes: p.review_count || 0,
-            bairro: p.borough, cidade: p.city, endereco: p.address, google_maps: p.link,
-            prioridade: s.total, motivo: s.why, mensagem: messageFor(p),
-            origem: 'google_maps', busca: busca, coletado_em: new Date().toISOString()
-        };
-    }
-
     function rating(n) { return n ? n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : ''; }
     function int(n) { return Number(n || 0).toLocaleString('pt-BR'); }
 
@@ -723,16 +697,6 @@
         navigator.clipboard.writeText(phones.join('\n')).then(function () {
             toast(phones.length + ' telefones copiados');
         });
-    });
-
-    $('crmExport').addEventListener('click', function () {
-        if (!state.selected) return;
-        var rows = filtered();
-        if (!rows.length) return;
-        var busca = state.selected.Name;
-        crm.send(rows.map(function (p) { return leadFor(p, busca); }),
-            'prospectar-crm-' + slug(busca) + '-' + new Date().toISOString().slice(0, 10) + '.json');
-        toast(rows.length + ' leads prontos pro CRM');
     });
 
     // Editor do modelo de mensagem
