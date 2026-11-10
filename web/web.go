@@ -186,7 +186,12 @@ func (s *Server) Start(ctx context.Context) error {
 		log.Println("server stopped")
 	}(ctx)
 
-	fmt.Fprintf(os.Stderr, "visit http://localhost%s\n", s.srv.Addr)
+	host := s.srv.Addr
+	if strings.HasPrefix(host, ":") {
+		host = "localhost" + host
+	}
+
+	fmt.Fprintf(os.Stderr, "visit http://%s\n", host)
 
 	err := s.srv.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {

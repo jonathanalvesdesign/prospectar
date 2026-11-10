@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Sobe o MazyOS Scraper em segundo plano e abre no navegador.
-# Pra desligar: kill $(cat webdata/mazyos.pid)
+# Sobe o Prospectar em segundo plano e abre no navegador.
+# Pra desligar: kill $(cat webdata/prospectar.pid)
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p webdata
 
-export DISABLE_TELEMETRY=1
-nohup ./mazyos-scraper -web -addr :8080 -data-folder webdata > webdata/mazyos.log 2>&1 &
-echo $! > webdata/mazyos.pid
+# telemetria já vem desligada por padrão
+nohup ./prospectar -web -addr 127.0.0.1:8080 -data-folder webdata > webdata/prospectar.log 2>&1 &
+echo $! > webdata/prospectar.pid
 
 sleep 3
 url=http://localhost:8080

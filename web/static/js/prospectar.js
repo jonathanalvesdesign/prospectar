@@ -1,4 +1,4 @@
-// MazyOS Scraper: interface sobre a API do google-maps-scraper.
+// Prospectar: interface sobre o motor do google-maps-scraper (gosom, MIT).
 (function () {
     'use strict';
 
@@ -109,6 +109,96 @@
 
     function domain(url) {
         return String(url).replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[?#].*$/, '').replace(/\/$/, '');
+    }
+
+    // ---------- Prioridade do lead ----------
+    // Nota de 0 a 100. Quanto mais a empresa precisa do que você vende e mais fácil é falar com ela, maior a nota.
+    //   site: sem site 40 · só rede social 25 · site próprio 0
+    //   telefone: celular (WhatsApp) 25 · fixo 8 · sem telefone 0
+    //   avaliação: >=4,5 20 · >=4,0 14 · >=3,5 7  (negócio bom que merece aparecer melhor)
+    //   volume de avaliações: >=30 15 · >=10 8     (negócio ativo, com cliente de verdade)
+    var HOT = 70;
+
+    function score(p) {
+        var k = siteKind(p.website);
+        var total = 0;
+        var why = [];
+        if (k === 'none') { total += 40; why.push('sem site'); }
+        else if (k === 'social') { total += 25; why.push('só rede social'); }
+        if (whatsapp(p.phone)) { total += 25; why.push('WhatsApp'); }
+        else if (p.phone) { total += 8; }
+        var r = Number(p.review_rating || 0);
+        if (r >= 4.5) { total += 20; why.push('nota ' + rating(r)); }
+        else if (r >= 4) { total += 14; why.push('nota ' + rating(r)); }
+        else if (r >= 3.5) { total += 7; }
+        var n = Number(p.review_count || 0);
+        if (n >= 30) { total += 15; why.push(n + ' avaliações'); }
+        else if (n >= 10) { total += 8; }
+        return { total: total, why: why.join(', ') };
+    }
+
+    // ---------- Mensagem de abordagem ----------
+    // Modelo com variáveis. Fica salvo no navegador; o envio é sempre manual (você aperta enviar no WhatsApp).
+    var TPL_DEFAULT = 'Oi, tudo bem? Aqui é {meu_nome}. Vi a {nome} aqui em {bairro} no Google e {problema}. ' +
+        'Posso te mostrar em 2 minutos como resolver? Se preferir não receber mensagens, é só me avisar que eu tiro seu contato da lista.';
+
+    function store(key, val) {
+        try {
+            if (val === undefined) return localStorage.getItem('prospectar.' + key);
+            localStorage.setItem('prospectar.' + key, val);
+        } catch (e) { /* armazenamento indisponível: segue sem salvar */ }
+        return null;
+    }
+
+    function problem(p) {
+        var k = siteKind(p.website);
+        if (k === 'none') return 'percebi que ainda não tem site, e muita gente pesquisa antes de ligar';
+        if (k === 'social') return 'percebi que hoje o contato é só pelas redes sociais, sem um site próprio';
+        return 'tenho uma ideia pra trazer mais clientes pra vocês';
+    }
+
+    function messageFor(p) {
+        var tpl = store('tpl') || TPL_DEFAULT;
+        var vars = {
+            nome: p.title || '',
+            bairro: p.borough || p.city || 'sua região',
+            cidade: p.city || '',
+            nicho: (p.category || '').toLowerCase(),
+            problema: problem(p),
+            meu_nome: (store('name') || '').trim() || 'um profissional de marketing'
+        };
+        return tpl.replace(/\{(\w+)\}/g, function (m, k) { return Object.prototype.hasOwnProperty.call(vars, k) ? vars[k] : m; });
+    }
+
+    function waLink(p) {
+        var wa = whatsapp(p.phone);
+        return wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(messageFor(p)) : '';
+    }
+
+    // ---------- Saída pro CRM ----------
+    // Hoje gera um arquivo JSON. Quando o CRM tiver API, troque só o corpo desta função
+    // (e libere o endereço dele em connect-src, em web/web.go).
+    var crm = {
+        send: function (leads, filename) {
+            var blob = new Blob([JSON.stringify(leads, null, 2)], { type: 'application/json' });
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+        }
+    };
+
+    function leadFor(p, busca) {
+        var s = score(p);
+        return {
+            nome: p.title, categoria: p.category, telefone: p.phone,
+            whatsapp: waLink(p) ? 'https://wa.me/' + whatsapp(p.phone) : '',
+            site: p.website, email: p.emails, nota: p.review_rating || null, avaliacoes: p.review_count || 0,
+            bairro: p.borough, cidade: p.city, endereco: p.address, google_maps: p.link,
+            prioridade: s.total, motivo: s.why, mensagem: messageFor(p),
+            origem: 'google_maps', busca: busca, coletado_em: new Date().toISOString()
+        };
     }
 
     function rating(n) { return n ? n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : ''; }
@@ -480,15 +570,20 @@
 
     function filtered() {
         var txt = $('filterText').value.trim().toLowerCase();
-        return state.places.filter(function (p) {
+        var list = state.places.filter(function (p) {
             var k = siteKind(p.website);
             if (state.filter === 'nosite' && k !== 'none') return false;
             if (state.filter === 'social' && k !== 'social') return false;
             if (state.filter === 'whats' && !whatsapp(p.phone)) return false;
             if (state.filter === 'email' && !p.emails) return false;
+            if (state.filter === 'hot' && score(p).total < HOT) return false;
             if (txt && (p.title + ' ' + p.borough + ' ' + p.category).toLowerCase().indexOf(txt) < 0) return false;
             return true;
         });
+        // Mais promissoras primeiro; empates mantêm a ordem do Google.
+        return list.map(function (p, i) { return { p: p, i: i, s: score(p).total }; })
+            .sort(function (a, b) { return (b.s - a.s) || (a.i - b.i); })
+            .map(function (x) { return x.p; });
     }
 
     function renderBoard() {
@@ -509,6 +604,7 @@
             [int(all.filter(function (p) { return whatsapp(p.phone); }).length), 'Com WhatsApp'],
             [int(all.filter(function (p) { return siteKind(p.website) === 'none'; }).length), 'Sem site'],
             [int(all.filter(function (p) { return siteKind(p.website) === 'social'; }).length), 'Só rede social'],
+            [int(all.filter(function (p) { return score(p).total >= HOT; }).length), 'Quentes'],
             [avg ? rating(avg) : '-', 'Nota média']
         ];
         $('stats').innerHTML = stats.map(function (s) {
@@ -522,7 +618,7 @@
         var rows = filtered();
         $('download').textContent = 'Baixar planilha (' + rows.length + ')';
         if (!rows.length) {
-            $('rows').innerHTML = '<tr><td colspan="6" class="t-empty">' +
+            $('rows').innerHTML = '<tr><td colspan="8" class="t-empty">' +
                 (all.length ? 'Nenhuma empresa nesse filtro.' : (running ? 'As empresas aparecem aqui conforme a busca anda.' : 'Essa busca não trouxe empresas.')) +
                 '</td></tr>';
             return;
@@ -533,6 +629,7 @@
                 : '<a class="t-site" href="' + esc(p.website) + '" target="_blank" rel="noopener">' + esc(domain(p.website)) + '</a>' +
                   (k === 'social' ? '<span class="tag">Rede social</span>' : '');
             var wa = whatsapp(p.phone);
+            var sc = score(p);
             var phone = !p.phone ? '<span class="t-cat">sem telefone</span>'
                 : wa ? '<a class="mono" href="https://wa.me/' + wa + '" target="_blank" rel="noopener">' + esc(p.phone) + '</a><span class="wa">WHATS</span>'
                 : '<span class="mono">' + esc(p.phone) + '</span>';
@@ -540,8 +637,11 @@
                 '<td><div class="t-name">' + esc(p.title) + '</div><div class="t-cat">' + esc(p.category) + '</div></td>' +
                 '<td>' + esc(p.borough) + '</td>' +
                 '<td class="num">' + (p.review_rating ? '★ ' + rating(p.review_rating) + ' <span class="t-cat">(' + int(p.review_count) + ')</span>' : '') + '</td>' +
+                '<td class="num"><span class="score ' + (sc.total >= HOT ? 'hot' : sc.total >= 40 ? 'warm' : '') + '" title="' + esc(sc.why) + '">' + sc.total + '</span></td>' +
                 '<td>' + phone + '</td>' +
                 '<td>' + site + '</td>' +
+                '<td>' + (wa ? '<a class="mini" href="' + waLink(p) + '" target="_blank" rel="noopener" title="Abre o WhatsApp com a mensagem pronta. Você envia.">Abordar</a>'
+                    : p.phone ? '<button type="button" class="mini" data-copy="' + i + '">Copiar msg</button>' : '') + '</td>' +
                 '<td>' + (p.link ? '<a href="' + esc(p.link) + '" target="_blank" rel="noopener" title="Abrir no Google Maps">' + ICON.arrow + '</a>' : '') + '</td>' +
                 '</tr>';
         }).join('');
@@ -553,7 +653,12 @@
 
     // Clicar numa linha leva pro pin no mapa.
     $('rows').addEventListener('click', function (e) {
-        if (e.target.closest('a')) return;
+        var cp = e.target.closest('button[data-copy]');
+        if (cp) {
+            navigator.clipboard.writeText(messageFor(renderBoard.rows[Number(cp.getAttribute('data-copy'))])).then(function () { toast('Mensagem copiada'); });
+            return;
+        }
+        if (e.target.closest('a, button')) return;
         var tr = e.target.closest('tr[data-i]');
         if (!tr) return;
         var p = renderBoard.rows[Number(tr.getAttribute('data-i'))];
@@ -578,9 +683,12 @@
 
     // ---------- Exportação ----------
 
+    // Texto vindo do Google/sites de terceiros pode começar com = + - @ e virar fórmula no Excel.
+    // O apóstrofo inicial força o Excel a tratar a célula como texto.
     function csvCell(v) {
         v = String(v == null ? '' : v);
-        return /[";\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+        if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+        return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
     }
 
     function slug(s) {
@@ -590,17 +698,17 @@
     // Planilha no padrão do Excel brasileiro: ponto e vírgula, vírgula decimal e BOM.
     function download(rows) {
         if (!state.selected || !rows.length) return;
-        var head = ['Empresa', 'Categoria', 'Telefone', 'WhatsApp', 'Site', 'E-mail', 'Nota', 'Avaliações', 'Bairro', 'Cidade', 'Endereço', 'Google Maps'];
+        var head = ['Empresa', 'Categoria', 'Telefone', 'WhatsApp', 'Site', 'E-mail', 'Nota', 'Avaliações', 'Bairro', 'Cidade', 'Endereço', 'Google Maps', 'Prioridade', 'Mensagem'];
         var lines = [head.join(';')].concat(rows.map(function (p) {
             var wa = whatsapp(p.phone);
             return [p.title, p.category, p.phone, wa ? 'https://wa.me/' + wa : '', p.website, p.emails,
-                p.review_rating ? rating(p.review_rating) : '', p.review_count || '', p.borough, p.city, p.address, p.link]
+                p.review_rating ? rating(p.review_rating) : '', p.review_count || '', p.borough, p.city, p.address, p.link, score(p).total, messageFor(p)]
                 .map(csvCell).join(';');
         }));
         var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'mazyos-' + slug(state.selected.Name) + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+        a.download = 'prospectar-' + slug(state.selected.Name) + '-' + new Date().toISOString().slice(0, 10) + '.csv';
         a.click();
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
         toast(rows.length + ' empresas exportadas');
@@ -616,6 +724,35 @@
             toast(phones.length + ' telefones copiados');
         });
     });
+
+    $('crmExport').addEventListener('click', function () {
+        if (!state.selected) return;
+        var rows = filtered();
+        if (!rows.length) return;
+        var busca = state.selected.Name;
+        crm.send(rows.map(function (p) { return leadFor(p, busca); }),
+            'prospectar-crm-' + slug(busca) + '-' + new Date().toISOString().slice(0, 10) + '.json');
+        toast(rows.length + ' leads prontos pro CRM');
+    });
+
+    // Editor do modelo de mensagem
+    $('msgTpl').value = store('tpl') || TPL_DEFAULT;
+    $('myName').value = store('name') || '';
+
+    function renderPreview() {
+        var p = (renderBoard.rows && renderBoard.rows[0]) || state.places[0];
+        $('msgPreview').textContent = p ? messageFor(p) : 'A prévia aparece quando houver empresas.';
+    }
+
+    $('msgTpl').addEventListener('input', function () { store('tpl', $('msgTpl').value); renderPreview(); renderBoard(); });
+    $('myName').addEventListener('input', function () { store('name', $('myName').value); renderPreview(); renderBoard(); });
+    $('msgReset').addEventListener('click', function () {
+        $('msgTpl').value = TPL_DEFAULT;
+        store('tpl', TPL_DEFAULT);
+        renderPreview();
+        renderBoard();
+    });
+    $('msgBox').addEventListener('toggle', renderPreview);
 
     // ---------- Ciclo ----------
 

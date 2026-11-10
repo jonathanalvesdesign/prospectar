@@ -8,6 +8,9 @@ examples/examples-api/**/__pycache__/
 examples/examples-api/**/*.py[cod]
 gmaps-output
 
-# MazyOS Scraper
-/mazyos-scraper.exe
-/mazyos-scraper
+# Prospectar
+/prospectar.exe
+/prospectar
+
+# Chaves locais de teste nunca vão pro repositório
+local/test_ssh_key*
